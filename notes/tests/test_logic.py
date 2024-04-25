@@ -132,8 +132,8 @@ class TestNoteEditDelete(TestCase):
         cls.url_delete_note = reverse('notes:delete', kwargs=cls.kwargs)
         cls.url_redirect = reverse('notes:success')
         cls.edit_form_data = {
-            'title': cls.NOTE_TITLE,
-            'text:': cls.NEW_NOTE_TEXT,
+            'title': 'НОВОЕ',
+            'text': cls.NEW_NOTE_TEXT,
             'slug': cls.NOTE_SLUG
         }
 
@@ -151,18 +151,16 @@ class TestNoteEditDelete(TestCase):
         notes_count = Note.objects.count()
         self.assertEqual(notes_count, 1)
 
-    # Эта проверка не проходит. Мне так никто и не ответил как ее исправить.
-    # Поэтому убрал ее и прошу не требовать от меня ее реализовывать.
-    # def test_author_can_edit_own_note(self):
-    #     """Автор может редактировать свою заметку."""
+    def test_author_can_edit_own_note(self):
+        """Автор может редактировать свою заметку."""
 
-    #     response = self.auth_author.post(
-    #         self.url_edit_note,
-    #         data=self.edit_form_data
-    #     )
-    #     self.assertEqual(response.status_code, HTTPStatus.OK)
-    #     self.note.refresh_from_db()
-    #     # self.assertEqual(self.note.text, self.NEW_NOTE_TEXT)
+        response = self.auth_author.post(
+            self.url_edit_note,
+            data=self.edit_form_data
+        )
+        self.assertRedirects(response, self.url_redirect)
+        self.note.refresh_from_db()
+        self.assertEqual(self.note.text, self.NEW_NOTE_TEXT)
 
     def test_author_cant_edit_another_note(self):
         """Пользователь не может редактировать чужую заявку."""
