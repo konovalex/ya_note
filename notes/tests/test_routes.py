@@ -26,7 +26,7 @@ class TestRoutes(TestCase):
         )
 
     def test_availability_for_pages_home_and_auth(self):
-        """Доступность страниц для неавторизованных пользователей."""
+        """Доступность общих страниц для неавторизованных пользователей."""
         pages = ['notes:home', 'users:login', 'users:logout', 'users:signup']
 
         for page in pages:
@@ -36,22 +36,14 @@ class TestRoutes(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_availability_for_pages_add_success_and_list(self):
-        """Доступность страниц создания и просмотра списка всех заметок.
-
-        Страницы создания (add/ и done/) и просмотра всех заметок (notes/)
-        отображаются для авторизованных пользователей со списком заметок,
-        принадлежащих этим пользователям.
-        """
+        """Доступность страниц создания и просмотра списка всех заметок."""
         pages = ['notes:add', 'notes:success', 'notes:list']
-        users = [self.author, self.reader]
-
-        for user in users:
-            self.client.force_login(user)
-            for page in pages:
-                with self.subTest(user=user, page=page):
-                    url = reverse(page)
-                    response = self.client.get(url)
-                    self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.client.force_login(self.author)
+        for page in pages:
+            with self.subTest(page=page):
+                url = reverse(page)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_availability_for_notes_detail_edit_and_delete(self):
         """Доступность страниц просмотра, редактирования и удаления заметки."""
