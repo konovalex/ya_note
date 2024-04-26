@@ -68,7 +68,7 @@ class TestDuplicateSlug(TestCase):
         """Создание заметки с тем же самым slug."""
         form_with_same_slug = {
             'title': self.NOTE_TITLE,
-            'text:': self.NOTE_TEXT,
+            'text': self.NOTE_TEXT,
             'slug': self.NOTE_SLUG
         }
         error_text = self.NOTE_SLUG + WARNING
@@ -87,7 +87,7 @@ class TestDuplicateSlug(TestCase):
         """Создание заметки без слага."""
         form_with_same_slug = {
             'title': self.NOTE_TITLE,
-            'text:': self.NOTE_TEXT,
+            'text': self.NOTE_TEXT,
         }
         error_text = self.NOTE_SLUG + WARNING
         response = self.auth_user.post(
@@ -153,7 +153,6 @@ class TestNoteEditDelete(TestCase):
 
     def test_author_can_edit_own_note(self):
         """Автор может редактировать свою заметку."""
-
         response = self.auth_author.post(
             self.url_edit_note,
             data=self.edit_form_data
