@@ -8,6 +8,10 @@ from notes.forms import WARNING
 from notes.models import Note
 
 
+NOTE_TITLE = 'Заметка'
+NOTE_TEXT = 'Текст заметки'
+NOTE_SLUG = 'zametka'
+
 User = get_user_model()
 
 
@@ -21,9 +25,9 @@ class TestNoteDetail(TestCase):
         cls.auth_user = Client()
         cls.auth_user.force_login(cls.author)
         cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='zametka',
+            title=NOTE_TITLE,
+            text=NOTE_TEXT,
+            slug=NOTE_SLUG,
             author=cls.author
         )
         cls.reader = User.objects.create(username='Читатель')
@@ -45,33 +49,29 @@ class TestNoteDetail(TestCase):
 class TestDuplicateSlug(TestCase):
     """Тестирование создания записей с одинаковыми slug."""
 
-    NOTE_TITLE = 'Заметка'
-    NOTE_TEXT = 'Текст заметки'
-    NOTE_SLUG = 'zametka'
-
     @classmethod
     def setUpTestData(cls):
         """Добавление тестовых данных для последующих проверок."""
         cls.author = User.objects.create(username='Иванов Иван')
         cls.note = Note.objects.create(
-            title=cls.NOTE_TITLE,
-            text=cls.NOTE_TEXT,
-            slug=cls.NOTE_SLUG,
+            title=NOTE_TITLE,
+            text=NOTE_TEXT,
+            slug=NOTE_SLUG,
             author=cls.author
         )
         cls.user = User.objects.create(username='Другой участник')
         cls.auth_user = Client()
         cls.auth_user.force_login(cls.user)
         cls.url_create_note = reverse('notes:add')
+        cls.error_text = NOTE_SLUG + WARNING
 
     def test_create_note_with_same_slug(self):
         """Создание заметки с тем же самым slug."""
         form_with_same_slug = {
-            'title': self.NOTE_TITLE,
-            'text': self.NOTE_TEXT,
-            'slug': self.NOTE_SLUG
+            'title': NOTE_TITLE,
+            'text': NOTE_TEXT,
+            'slug': NOTE_SLUG
         }
-        error_text = self.NOTE_SLUG + WARNING
         response = self.auth_user.post(
             self.url_create_note,
             data=form_with_same_slug
@@ -80,16 +80,12 @@ class TestDuplicateSlug(TestCase):
             response,
             form='form',
             field='slug',
-            errors=error_text
+            errors=self.error_text
         )
 
     def test_create_note_without_slug(self):
         """Создание заметки без слага."""
-        form_with_same_slug = {
-            'title': self.NOTE_TITLE,
-            'text': self.NOTE_TEXT,
-        }
-        error_text = self.NOTE_SLUG + WARNING
+        form_with_same_slug = {'title': NOTE_TITLE, 'text': NOTE_TEXT}
         response = self.auth_user.post(
             self.url_create_note,
             data=form_with_same_slug
@@ -98,30 +94,27 @@ class TestDuplicateSlug(TestCase):
             response,
             form='form',
             field='slug',
-            errors=error_text
+            errors=self.error_text
         )
 
 
 class TestNoteEditDelete(TestCase):
     """Тестирование редактирования и удаления заметки."""
 
-    NOTE_TITLE = 'Заголовок'
-    NOTE_TEXT = 'Текст заметки'
-    NOTE_SLUG = 'zametka'
     NEW_NOTE_TEXT = 'Новый текст заметки'
 
     @classmethod
     def setUpTestData(cls):
         """Добавление тестовых данных для последующих проверок."""
         cls.author = User.objects.create(username='Автор заметки')
-        cls.auth_author = Client()
-        cls.auth_author.force_login(cls.author)
         cls.note = Note.objects.create(
-            title=cls.NOTE_TITLE,
-            text=cls.NOTE_TEXT,
-            slug=cls.NOTE_SLUG,
+            title=NOTE_TITLE,
+            text=NOTE_TEXT,
+            slug=NOTE_SLUG,
             author=cls.author
         )
+        cls.auth_author = Client()
+        cls.auth_author.force_login(cls.author)
 
         cls.another_user = User.objects.create(username='Другой пользователь')
         cls.auth_another_user = Client()
@@ -132,9 +125,9 @@ class TestNoteEditDelete(TestCase):
         cls.url_delete_note = reverse('notes:delete', kwargs=cls.kwargs)
         cls.url_redirect = reverse('notes:success')
         cls.edit_form_data = {
-            'title': 'НОВОЕ',
+            'title': NOTE_TITLE,
             'text': cls.NEW_NOTE_TEXT,
-            'slug': cls.NOTE_SLUG
+            'slug': NOTE_SLUG
         }
 
     def test_author_can_delete_note(self):
@@ -162,11 +155,11 @@ class TestNoteEditDelete(TestCase):
         self.assertEqual(self.note.text, self.NEW_NOTE_TEXT)
 
     def test_author_cant_edit_another_note(self):
-        """Пользователь не может редактировать чужую заявку."""
+        """Пользователь не может редактировать чужую заметку."""
         response = self.auth_another_user.post(
             self.url_edit_note,
             data=self.edit_form_data
         )
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.note.refresh_from_db()
-        self.assertEqual(self.note.text, self.NOTE_TEXT)
+        self.assertEqual(self.note.text, NOTE_TEXT)
