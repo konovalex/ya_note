@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+from pytils.translit import slugify
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -20,7 +22,7 @@ class TestNoteDetail(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        """Добавление тестовых данных для последующих проверок."""
+        """Добавление автора, читателя, их клиентов и заметки автора."""
         cls.author = User.objects.create(username='Иванов Иван')
         cls.auth_user = Client()
         cls.auth_user.force_login(cls.author)
@@ -41,17 +43,17 @@ class TestNoteDetail(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_authorized_client_cant_view_ahother_note(self):
-        """Автризованный пользователь не может видеть чужую запись."""
+        """Авторизованный пользователь не может видеть чужую запись."""
         response = self.auth_reader.get(self.note_url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
-class TestDuplicateSlug(TestCase):
-    """Тестирование создания записей с одинаковыми slug."""
+class TestCreateNote(TestCase):
+    """Тестирование создания записи."""
 
     @classmethod
     def setUpTestData(cls):
-        """Добавление тестовых данных для последующих проверок."""
+        """Добавление двух пользователей и заметки одного из пользователей."""
         cls.author = User.objects.create(username='Иванов Иван')
         cls.note = Note.objects.create(
             title=NOTE_TITLE,
@@ -63,43 +65,37 @@ class TestDuplicateSlug(TestCase):
         cls.auth_user = Client()
         cls.auth_user.force_login(cls.user)
         cls.url_create_note = reverse('notes:add')
-        cls.error_text = NOTE_SLUG + WARNING
-
-    def test_create_note_with_same_slug(self):
-        """Создание заметки с тем же самым slug."""
-        form_with_same_slug = {
+        cls.form_note = {
             'title': NOTE_TITLE,
             'text': NOTE_TEXT,
             'slug': NOTE_SLUG
         }
+
+    def test_create_note_with_same_slug(self):
+        """Создание заметки с тем же самым slug."""
+        error_text = NOTE_SLUG + WARNING
         response = self.auth_user.post(
             self.url_create_note,
-            data=form_with_same_slug
+            data=self.form_note
         )
         self.assertFormError(
             response,
             form='form',
             field='slug',
-            errors=self.error_text
+            errors=error_text
         )
 
     def test_create_note_without_slug(self):
-        """Создание заметки без слага."""
-        form_with_same_slug = {'title': NOTE_TITLE, 'text': NOTE_TEXT}
-        response = self.auth_user.post(
-            self.url_create_note,
-            data=form_with_same_slug
-        )
-        self.assertFormError(
-            response,
-            form='form',
-            field='slug',
-            errors=self.error_text
-        )
+        """Создание заметки без slug."""
+        self.form_note['title'] = 'Другая заметка'
+        self.form_note.pop('slug')
+        self.auth_user.post(self.url_create_note, data=self.form_note)
+        note = Note.objects.get(author=self.user.pk)
+        self.assertEqual(note.slug, slugify(self.form_note['title']))
 
 
 class TestNoteEditDelete(TestCase):
-    """Тестирование редактирования и удаления заметки."""
+    """Редактирование и удаление заметки."""
 
     NEW_NOTE_TEXT = 'Новый текст заметки'
 
@@ -154,7 +150,7 @@ class TestNoteEditDelete(TestCase):
         self.note.refresh_from_db()
         self.assertEqual(self.note.text, self.NEW_NOTE_TEXT)
 
-    def test_author_cant_edit_another_note(self):
+    def test_user_cant_edit_another_note(self):
         """Пользователь не может редактировать чужую заметку."""
         response = self.auth_another_user.post(
             self.url_edit_note,

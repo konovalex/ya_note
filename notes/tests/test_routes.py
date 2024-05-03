@@ -15,7 +15,7 @@ class TestRoutes(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        """Добавление тестовых данных для последующих проверок."""
+        """Добавление автора, читателя и заметки от автора."""
         cls.author = User.objects.create(username='Иванов Иван')
         cls.reader = User.objects.create(username='Простой читатель')
         cls.note = Note.objects.create(
@@ -36,7 +36,7 @@ class TestRoutes(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_availability_for_pages_add_success_and_list(self):
-        """Доступность страниц создания и просмотра списка всех заметок."""
+        """Доступность страниц создания и просмотра списка своих заметок."""
         pages = ['notes:add', 'notes:success', 'notes:list']
         self.client.force_login(self.author)
         for page in pages:
@@ -67,12 +67,7 @@ class TestRoutes(TestCase):
                     self.assertEqual(response.status_code, status)
 
     def test_redirect_for_anonymous_client(self):
-        """Редирект анонимных пользователей.
-
-        Анонимные пользователи при просмотре любых страниц,
-        связанных с заметками, должны перенаправляться
-        на страницу авторизации.
-        """
+        """Редирект анонимных пользователей."""
         note_kwargs = {'slug': self.note.slug}
         pages = (
             ('notes:add', None),
